@@ -45,11 +45,9 @@ A face verification system that accepts two images, extracts facial embeddings, 
 ## Project Structure
 ```
 Face-Authentication/
-│── main.py
-│── models/
-│── embeddings/
-│── requirements.txt
 │── README.md
+│── fast_api.py
+│── requirements.txt
 ```
 
 
