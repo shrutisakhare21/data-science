@@ -15,17 +15,6 @@ A simple Amazon product scraping tool that extracts product details such as Titl
 4. CSV file will auto-download
 
 
-## Project Structure
-```
-Amazon-Scraper/
-│── amazon_scraper.ipynb
-│── requirements_scrapper.txt
-│── README.md
-│── sample.csv   
-```
-
-
-
 
 # Face Authentication System 
 A face verification system that accepts two images, extracts facial embeddings, and returns whether they belong to the same person along with a similarity score.
@@ -42,13 +31,6 @@ A face verification system that accepts two images, extracts facial embeddings, 
   ## Run Server
   uvicorn main:app --reload
 
-## Project Structure
-```
-Face-Authentication/
-│── README.md
-│── fast_api.py
-│── requirements.txt
-```
 ## Example Usage
 
 This example demonstrates how to use the Face Authentication API to verify if two face images belong to the same person.
@@ -60,8 +42,8 @@ This example demonstrates how to use the Face Authentication API to verify if tw
 **Request Body (JSON):**
 ```json
 {
-  "image_url_1": "https://upload.wikimedia.org/wikipedia/commons/4/46/Saurabh_Raj_Jain_at_Indian_Television_Academy_Awards.jpg",
-  "image_url_2": "https://upload.wikimedia.org/wikipedia/commons/4/46/Saurabh_Raj_Jain_at_Indian_Television_Academy_Awards.jpg",
+  "image_url_1": "https://image.tmdb.org/t/p/w400/nzz4NZfJwX9eGxFLNXaNn5YCk34.jpg",
+  "image_url_2": "https://images.news18.com/ibnlive/uploads/2021/11/saurabh-raj-jain-16382814474x3.jpg",
   "threshold": 0.35
 }
 
