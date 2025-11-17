@@ -27,9 +27,7 @@ A face verification system that accepts two images, extracts facial embeddings, 
   - Same Person / Different Person
   - Similarity %
   - Bounding Boxes
- 
-  ## Run Server
-  uvicorn main:app --reload
+
 
 ## Example Usage
 
