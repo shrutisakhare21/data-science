@@ -42,13 +42,12 @@ A face verification system that accepts two images, extracts facial embeddings, 
   ## Run Server
   uvicorn main:app --reload
 
-  ## Project Structure
-  ```
-  Face-Authentication/
+## Project Structure
+Face-Authentication/
 │── main.py
 │── models/
 │── embeddings/
 │── requirements.txt
 │── README.md
-```
+
 
