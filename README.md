@@ -35,7 +35,7 @@ This example demonstrates how to use the Face Authentication API to verify if tw
 
 ### Request
 
-**POST** `http://127.0.0.1:8000/verify`
+**POST** `http://127.0.0.1:8000/authenticate`
 
 **Request Body (JSON):**
 ```json
