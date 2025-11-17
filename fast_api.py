@@ -57,7 +57,7 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     """Calculate cosine similarity between two embeddings"""
     return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
 
-# API Endpoints
+
 @app.post("/verify")
 def verify_faces(req: VerifyRequest):
     """
