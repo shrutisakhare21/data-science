@@ -1,93 +1,118 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import os
 import numpy as np
-import pickle
 import requests
 from io import BytesIO
 from PIL import Image
 from insightface.app import FaceAnalysis
+from typing import List, Dict
 
-app = FastAPI(title="Face Authentication Service", description="Face verification using InsightFace", version="1.0")
+app = FastAPI(
+    title="Face Authentication Service",
+    description="Face verification using InsightFace",
+    version="1.0"
+)
 
 
 face_app = FaceAnalysis(name="buffalo_l")
 face_app.prepare(ctx_id=0, det_size=(640, 640))
 
 
-DB_FILE = "embeddings.pkl"
-
-def load_db():
-    if os.path.exists(DB_FILE):
-        return pickle.load(open(DB_FILE, "rb"))
-    return {}
-
-def save_db(db):
-    pickle.dump(db, open(DB_FILE, "wb"))
+class VerifyRequest(BaseModel):
+    image_url_1: str
+    image_url_2: str
+    threshold: float = 0.35
 
 
-def load_image_from_url(url):
+def load_image_from_url(url: str):
+    """Load image from URL and convert to numpy array"""
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
     return np.array(img)
 
-
-def extract_embedding(image_url):
+def extract_faces(image_url: str) -> List[Dict]:
+    """Extract all faces from an image with embeddings and bounding boxes"""
     img = load_image_from_url(image_url)
     faces = face_app.get(img)
+    
     if len(faces) == 0:
         raise ValueError("No face detected in the image.")
-    return faces[0].embedding
+    
+    face_data = []
+    for face in faces:
+        face_data.append({
+            "embedding": face.embedding,
+            "bbox": {
+                "x1": float(face.bbox[0]),
+                "y1": float(face.bbox[1]),
+                "x2": float(face.bbox[2]),
+                "y2": float(face.bbox[3])
+            },
+            "confidence": float(face.det_score)
+        })
+    
+    return face_data
 
-def cosine_similarity(a, b):
-    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
+    """Calculate cosine similarity between two embeddings"""
+    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
 
-
-class RegisterRequest(BaseModel):
-    user_id: str
-    image_url: str
-
-class AuthRequest(BaseModel):
-    image_url: str
-    threshold: float = 0.35
-
-
-@app.post("/register")
-def register_user(req: RegisterRequest):
+# API Endpoints
+@app.post("/verify")
+def verify_faces(req: VerifyRequest):
+    """
+    Compare two face images and determine if they're the same person.
+    
+    Returns:
+    - verification_result: "same person" or "different person"
+    - similarity_score: float between -1 and 1
+    - faces_detected: information about detected faces including bounding boxes
+    """
     try:
-        emb = extract_embedding(req.image_url)
-        db = load_db()
-        db[req.user_id] = emb
-        save_db(db)
-        return {"message": f"User '{req.user_id}' registered successfully!"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.post("/authenticate")
-def authenticate(req: AuthRequest):
-    try:
-        emb = extract_embedding(req.image_url)
-        db = load_db()
-
-        if not db:
-            raise HTTPException(status_code=404, detail="No registered users found.")
-
-        best_user = None
-        best_score = -1
-
-        for user_id, ref_emb in db.items():
-            score = cosine_similarity(emb, ref_emb)
-            if score > best_score:
-                best_score = score
-                best_user = user_id
-
-        result = {
-            "best_match": best_user,
-            "similarity_score": float(best_score),
-            "authentication": "SUCCESS" if best_score >= req.threshold else "FAILED"
+        # Extract faces from both images
+        faces_1 = extract_faces(req.image_url_1)
+        faces_2 = extract_faces(req.image_url_2)
+        
+        # Use the first (most confident) face from each image
+        face_1 = faces_1[0]
+        face_2 = faces_2[0]
+        
+        # Calculate similarity
+        similarity_score = cosine_similarity(face_1["embedding"], face_2["embedding"])
+        
+        # Determine verification result
+        verification_result = "same person" if similarity_score >= req.threshold else "different person"
+        
+        return {
+            "verification_result": verification_result,
+            "similarity_score": similarity_score,
+            "threshold_used": req.threshold,
+            "image_1_faces": {
+                "count": len(faces_1),
+                "primary_face": {
+                    "bounding_box": face_1["bbox"],
+                    "confidence": face_1["confidence"]
+                }
+            },
+            "image_2_faces": {
+                "count": len(faces_2),
+                "primary_face": {
+                    "bounding_box": face_2["bbox"],
+                    "confidence": face_2["confidence"]
+                }
+            }
         }
-
-        return result
-
+    
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error processing images: {str(e)}")
+
+@app.get("/")
+def root():
+    return {
+        "message": "Face Verification API",
+        "endpoints": {
+            "/verify": "POST - Verify if two face images are the same person"
+        }
+    }
